@@ -14,7 +14,7 @@ Information is output in a CSV file.
 `$ python3 searchsploit.py`
 
 ## Usage
-    searchsploit.py [-h] [-o OUT] [-u] [-U] [-f FILE] [--cve CVE [CVE ...]]
+    searchsploit [-h] [-o OUT] [-u] [-U] [-f FILE] [--cve CVE [CVE ...]]
 
     options:
         -h, --help           show this help message and exit
