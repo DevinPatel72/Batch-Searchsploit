@@ -7,76 +7,45 @@ import re
 import csv
 import argparse
 import traceback
+import requests
 import subprocess
 
 # Vars
-exploitdb_repo = 'https://gitlab.com/exploit-database/exploitdb.git'
-exploitdb_dir = 'exploitdb'
+exploitdb_exploits_url = "https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv"
+exploitdb_shellcodes_url = "https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_shellcodes.csv"
+exploitdb_dir = os.path.join(os.getcwd(), 'exploitdb')
 
 # Funcs
-def git_ping():
-    # Check if git is in the PATH
-    if shutil.which('git') is None:
-        console("Unable to find command \'git\'. Please ensure \'git\' is installed and on the PATH.", type='critical')
-        sys.exit(1)
-    
-    command = ['git', 'ls-remote', exploitdb_repo]
-    result = subprocess.run(command, capture_output=True, text=True)
-    
-    if 'fatal:' in result.stdout or result.returncode != 0:
-        console("Unable to connect to the exploitdb gitlab repo.", type='error')
-        return False
-    else:
-        return True
-
 def update_searchsploit():
-    # Check if a git clone can be performed first
-    if not git_ping():
-        console("Skipping update because a connection cannot be established", type='error')
-        return 1
-    
-    console("Updating \'exploitdb\' repo...", type='info')
+    console("Updating \'exploitdb\' exploit list...", type='info')
     
     # Remove directory and fetch again
     if os.path.isdir(exploitdb_dir):
-        try:
-            subprocess.run(["git", "-C", exploitdb_dir, "fetch", "--all"], check=True, capture_output=True, text=True)
-            subprocess.run(["git", "-C", exploitdb_dir, "reset", "--hard", "origin/main"], check=True, capture_output=True, text=True)
-            debloat_exploitdb()
-            return 0
-        except subprocess.CalledProcessError as cpe:
-            console("Error while updating git. Exit code: {}".format(cpe.returncode), type='error')
-            console(cpe.stdout, 'stdout')
-            console(cpe.stderr, 'stderr')
-            return cpe.returncode
-    else: return fetch_exploitdb()
+        shutil.rmtree(exploitdb_dir, ignore_errors=True)
+        
+    return fetch_exploitdb()
 
 def fetch_exploitdb():
-    # Check if a git clone can be performed first
-    if not git_ping():
-        console("Skipping fetch because a connection cannot be established", type='error')
-        return 1
+    rc = 0
     
-    # Use git to clone the repo
-    command = ['git', 'clone', exploitdb_repo]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode != 0:
-        console("There were problems encountered with trying to clone the exploitdb gitlab repo.", type='error')
-        console(result.stdout, type='stdout')
-        console(result.stderr, type='stderr')
-        return 1
-    else:
-        console('Clone successful', type='info')
-        debloat_exploitdb()
-        return 0
+    # Create exploitdb folder
+    if not os.path.isdir(exploitdb_dir):
+        os.makedirs(exploitdb_dir)
     
-
-def debloat_exploitdb():
-    # Delete the exploits and shellcodes since all the info is in files_exploits.csv and files_shellcodes.csv
-    exploits_dir = os.path.join(exploitdb_dir, 'exploits')
-    shellcodes_dir = os.path.join(exploitdb_dir, 'shellcodes')
-    if os.path.isdir(exploits_dir):   shutil.rmtree(exploits_dir, ignore_errors=True)
-    if os.path.isdir(shellcodes_dir): shutil.rmtree(shellcodes_dir, ignore_errors=True)
+    # Use requests to get the raw file data
+    for url in [exploitdb_exploits_url, exploitdb_shellcodes_url]:
+        try:
+            filename = os.path.join(exploitdb_dir, url.split("/")[-1])
+            r = requests.get(url)
+            r.raise_for_status()
+            with open(filename, "wb") as f:
+                f.write(r.content)
+            console(f"Downloaded {os.path.basename(filename)}", type='info')
+        except requests.HTTPError:
+            console(f"There were problems encountered with trying to download the exploitdb file \"{os.path.basename(filename)}\"", type='error')
+            rc = 1
+    return rc
+            
 
 def searchsploit_csv(cves, search_data):
     output_data = []
@@ -177,12 +146,11 @@ def progress_bar(iteration, total, prefix='', suffix='', decimals=2, length=50, 
 
 def main():
     help_description = """
-This script searches exploit information from a ExploitDB gitlab repo using CVEs as the search term.
+This script searches exploit information from the official ExploitDB gitlab repo using CVEs as the search term.
 Information is output in a CSV file.
 
 Requirements:
-    ->  A connection to the internet to clone and update ExploitDB repo (recommended to update once a day)
-    ->  "git" is installed and on the PATH
+    ->  A connection to the internet to fetch the exploit list from the ExploitDB gitlab repo (recommended to update once a day)
 """
 
     parser = argparse.ArgumentParser(description=help_description, formatter_class=argparse.RawTextHelpFormatter)
@@ -269,7 +237,7 @@ Requirements:
     rc = write_csv_data(outfile, output_data, fieldnames)
     if rc != 0:
         sys.exit(rc)
-    console("Searchsploit complete", type='success')
+    console(f"Searchsploit complete. Results output to {outfile}", type='success')
     return
 
 if __name__ == '__main__':

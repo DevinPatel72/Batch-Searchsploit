@@ -1,18 +1,19 @@
-Script Creator: Devin Patel
-Last Updated: 20250822
+# Batch Searchsploit
 
-Description:
-    This script searches exploit information from the ExploitDB gitlab repo using CVEs as the search term.
-    Information is output in a CSV file.
+Script Creator: Devin Patel  
+Last Updated: 2025-12-09
 
-    Requirements:
-        ->  A connection to the internet to clone and update ExploitDB repo (recommended to update once a day)
-        ->  "git" is installed and on the PATH
+## Description
+This script searches exploit information from the official ExploitDB gitlab repo using CVEs as the search term.  
+Information is output in a CSV file.
 
-Execution:
-    $ python3 searchsploit.py
+## Requirements
+- A connection to the internet to fetch the exploit list from the ExploitDB gitlab repo (recommended to update once a day)
 
-Usage:
+## Execution
+`$ python3 searchsploit.py`
+
+## Usage
     searchsploit.py [-h] [-o OUT] [-u] [-U] [-f FILE] [--cve CVE [CVE ...]]
 
     options:
@@ -24,5 +25,5 @@ Usage:
         --cve CVE [CVE ...]  A list of CVE IDs to search. These will be searched in addition to a --file input.
                                 Example: --cve CVE-2022-24810 CVE-2022-24809
 
-Dependencies:
-    No external modules required.
+## Dependencies
+No external modules required.
