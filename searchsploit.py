@@ -8,7 +8,6 @@ import csv
 import argparse
 import traceback
 import requests
-import subprocess
 
 # Vars
 exploitdb_exploits_url = "https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv"
