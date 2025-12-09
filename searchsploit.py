@@ -48,10 +48,12 @@ def fetch_exploitdb():
 
 def searchsploit_csv(cves, search_data):
     output_data = []
+    output_notfound = []
     
     # Search Tags column for the CVE
     for i, cve in enumerate(cves, start=1):
         progress_bar(i, len(cves), prefix=f'Searching CVEs'.rjust(18), length=len(cves), suffix=f":: {cve}".ljust(20))
+        out_row = {}
         for row in search_data:
             out_row = {}
             if row['codes'] is not None and cve in row['codes']:
@@ -67,8 +69,26 @@ def searchsploit_csv(cves, search_data):
                     "URL": "https://www.exploit-db.com/exploits/{}".format(row["id"])
                     }
                 output_data.append(out_row)
+                break
+        # End of search_data loop
+        if len(out_row) <= 0:
+            out_row = {
+                "CVE": f"CVE-{cve}",
+                "Title": "CVE NOT FOUND",
+                "ID": '',
+                "Date Published": '',
+                "Date Added": '',
+                "Date Updated": '',
+                "Type": '',
+                "Platform": '',
+                "URL": ''
+            }
+            output_notfound.append(out_row)
+        
+    # End of cve loop
+            
     
-    return output_data
+    return output_data + output_notfound
     
 def load_csv_data(path):
     data = []
